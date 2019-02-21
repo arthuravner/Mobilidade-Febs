@@ -1,23 +1,34 @@
-#setwd("C:/CEFET/Pratica de Pesquisa/Projetos/json2csv")
-#setwd("C:/Users/Arthur/Documents/CEFET/Pratica de Pesquisa/Projetos/json2rdata")
-setwd("D:/Users/943665/My Documents/Arthur/cefet/Pratica de Pesquisa/Projetos/json2rdata")
+#Caminhos diretórios:
+dir_log <- "C:\Users\Arthur\Documents\CEFET\Pratica_de_Pesquisa\trabalho\log"
 
-Sys.setenv("JAVA_HOME" = "C:/Progra~1/Java/jre1.8.0_162")
+set_log <- function()
+{
+  tryCatch({
+    
+    #set log
+    if(!dir.exists('/tmp/log'))
+      dir.create('/tmp/log')  
+    
+    logFile = paste("C:\Users\Arthur\Documents\CEFET\Pratica_de_Pesquisa\trabalho\log", paste(as.character(Sys.time(), '%Y%m%d_%H%M%S'), 'log_json2rdata.txt', sep = '_'), sep = '/')
+    cat(paste(format(Sys.time(), "%Y/%m/%d %H:%M:%S"), "Iniciando processo ... ", sep = ' - '), file=logFile, append=TRUE, sep = "")
+    
+  }, error = function(err) {
+    
+    print(paste(format(Sys.time(), "%Y/%m/%d %H:%M:%S"), paste("Erro ao tentar criar arquivo de log. Msg erro: ", err), sep = ' - '))
+    stop()
+    
+  })
+}
 
-#set log
-logFile = paste(as.character(Sys.time(), '%Y%m%d_%H%M%S'), 'log_json2rdata.txt', sep = '_')
-cat(paste(format(Sys.time(), "%Y/%m/%d %H:%M:%S"), "Iniciando processo ... ", sep = ' - '), file=logFile, append=FALSE, sep = "\n")
+set_log()
+
 
 #filtros
 dat_ini <- '2017-01-01'
-qtd_dias_processar <- 3
+qtd_dias_processar <- 1
 
 #repositorios
 str_url_download <- 'http://aldebaran.eic.cefet-rj.br/data/mobility/zip/'
-
-
-if(!dir.exists('tmp'))
-  dir.create('tmp')  
 
 if(!dir.exists('/tmp/repositorio_json_cru'))
   dir.create('/tmp/repositorio_json_cru')  
@@ -29,14 +40,10 @@ if(!dir.exists('/tmp/repositorio_zip_cru'))
 
 dir_zip <- '/tmp/repositorio_zip_cru'
 
+if(!dir.exists('/shared/mobility/repositorio_r_data_cru'))
+  dir.create('/shared/mobility/repositorio_r_data_cru')
 
-if(!dir.exists('mobilidade'))
-  dir.create('mobilidade')
-
-if(!dir.exists('/mobilidade/repositorio_r_data_cru'))
-  dir.create('/mobilidade/repositorio_r_data_cru')
-
-dir_rdata <- '/mobilidade/repositorio_r_data_cru'
+dir_rdata <- '/shared/mobility/repositorio_r_data_cru'
 
 #funcoes
 cria_repositorio_dia <- function(dia)
@@ -44,7 +51,7 @@ cria_repositorio_dia <- function(dia)
   tryCatch({
     
     if(!dir.exists(paste('/tmp/repositorio_json_cru', dia, sep = "/")))
-      dir.create(paste('tmp/repositorio_json_cru', dia, sep = "/"))  
+      dir.create(paste('/tmp/repositorio_json_cru', dia, sep = "/"))  
     
   }, error = function(err) {
     
@@ -78,7 +85,7 @@ descompcta_zip <- function(arq_zip, dir_destino)
     
     if (file.exists(arq_zip)){
       unzip(arq_zip, exdir = dir_destino)
-      file.remove(arq_zip)
+      #file.remove(arq_zip)
     } else {
       cat(paste(format(Sys.time(), "%Y/%m/%d %H:%M:%S"), paste("Arquivo nÃ£o encontrado", basename(arq_zip), sep = " "), sep = ' - '), file=logFile, append=TRUE, sep = "\n")
     }
@@ -139,6 +146,7 @@ renomeia_colunas <- function(tbl)
 
 processa_dia <- function(dat)
 {
+  
   tryCatch({
     
     cat(paste(format(Sys.time(), "%Y/%m/%d %H:%M:%S"), paste('Processa: ', dat), sep = ' - '), file=logFile, append=TRUE, sep = "\n")
@@ -256,24 +264,30 @@ processa_dia <- function(dat)
   
 }
 
-#teste
-#library('jsonlite')
-#processa_dia(dat_ini)
 
-#Principal:
 library(SparkR)
 
-sparkR.session()
+sparkR.session(appName = "json2rdata")
+
 dias <- format(seq(as.POSIXct(dat_ini), by = "day", length.out = qtd_dias_processar), "%Y-%m-%d")
+
 spark.lapply(dias, processa_dia)
+
 cat(paste(format(Sys.time(), "%Y/%m/%d %H:%M:%S"), 'Fim processamento!', sep = ' - '), file=logFile, append=TRUE, sep = "\n")
+
 sparkR.session.stop()
 
-
-
-
-
-
+'
+tryCatch({
+  set_log()
+  print("teste")  
+}, error = function(err) {
+  
+  print(paste(format(Sys.time(), "%Y/%m/%d %H:%M:%S"), "Erro na execução do script", sep = ' - '))
+  stop()
+  
+})
+'
 
 
 
